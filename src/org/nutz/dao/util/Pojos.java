@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import org.nutz.dao.Chain;
 import org.nutz.dao.Condition;
+import org.nutz.dao.DaoException;
 import org.nutz.dao.FieldFilter;
 import org.nutz.dao.FieldMatcher;
 import org.nutz.dao.entity.Entity;
@@ -85,11 +86,17 @@ public abstract class Pojos {
 		}
 
 		public static PItem cndId(Entity<?> en, Number id) {
-			return cndColumn(en.getIdField(), id);
+		    MappingField mappingField = en.getIdField();
+		    if (mappingField == null)
+		        throw new DaoException("expect @Id but NOT found. " + en.getType().getName());
+			return cndColumn(mappingField, id);
 		}
 
 		public static PItem cndName(Entity<?> en, String name) {
-			return cndColumn(en.getNameField(), name);
+		    MappingField mappingField = en.getNameField();
+            if (mappingField == null)
+                throw new DaoException("expect @Name but NOT found. " + en.getType().getName());
+			return cndColumn(mappingField, name);
 		}
 
 		public static PItem cndColumn(MappingField mappingField, Object def) {
@@ -132,11 +139,11 @@ public abstract class Pojos {
 				}
 				return cndPk(en, pks);
 			default:
-				if (Map.class.isAssignableFrom(en.getType())){
-					return null; //Map形式的话,不一定需要主键嘛
+				if (Map.class.isAssignableFrom(en.getType())) {
+					return null; // Map形式的话,不一定需要主键嘛
 				}
 				throw Lang.makeThrow("Don't know how to make fetch key %s:'%s'", en.getType()
-						.getName(), obj);
+																					.getName(), obj);
 			}
 		}
 
@@ -180,7 +187,7 @@ public abstract class Pojos {
 	public static List<MappingField> getFieldsForInsert(Entity<?> en, FieldMatcher fm) {
 		List<MappingField> re = new ArrayList<MappingField>(en.getMappingFields().size());
 		for (MappingField mf : en.getMappingFields()) {
-			if (!mf.isAutoIncreasement() && !mf.isReadonly())
+			if (!mf.isAutoIncreasement() && !mf.isReadonly() && mf.isInsert())
 				if (null == fm || fm.match(mf.getName()))
 					re.add(mf);
 		}
@@ -198,7 +205,7 @@ public abstract class Pojos {
 				if (en.getPkType() == PkType.COMPOSITE && mf.isCompositePk())
 					continue;
 			}
-			if (mf.isReadonly() || mf.isAutoIncreasement())
+			if (mf.isReadonly() || mf.isAutoIncreasement() || !mf.isUpdate())
 				continue;
 			else if (null != fm && null != refer && fm.isIgnoreNull() && null == mf.getValue(refer))
 				continue;
