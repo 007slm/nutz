@@ -37,14 +37,29 @@ import java.lang.annotation.Target;
 @Documented
 public @interface ManyMany {
 
-	Class<?> target();
+	/**
+	 * 关联类
+	 */
+    Class<?> target();
 
-	String relation();
+    /**
+     * 中间表的名称
+     */
+    String relation();
 
-	String from();
+    /**
+     * 关联表中哪个字段代表主对象
+     */
+    String from();
 
-	String to();
+    /**
+     * 关联表中哪个字段代表 target 对象
+     */
+    String to();
 
-	String key() default "";
+    /**
+     * 指定关联类的一个属性名,缺省情况下,按参考字段名{@link #field()}的类型选取@Id或者@Name等主键字段
+     */
+    String key() default "";
 
 }

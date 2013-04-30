@@ -23,68 +23,85 @@ import org.nutz.http.Sender;
  */
 public abstract class BaseWebappTest {
 
-	protected Server server;
+    protected Server server;
 
-	protected Response resp;
+    protected Response resp;
 
-	@Before
-	public void startServer() throws Throwable {
+    private boolean isRunInMaven = false;
 
-		try {
-			URL url = getClass().getClassLoader().getResource("org/nutz/mvc/testapp/Root/FLAG");
-			String path = url.toExternalForm();
-			System.err.println(url);
-			server = new Server(8888);
-			String warUrlString = path.substring(0, path.length() - 4);
-			server.setHandler(new WebAppContext(warUrlString, getContextPath()));
-			server.start();
-		}
-		catch (Throwable e) {
-			if (server != null)
-				server.stop();
-			throw e;
-		}
-	}
+    private String serverURL = "http://localhost:8888";
 
-	@After
-	public void shutdownServer() throws Throwable {
-		if (server != null)
-			server.stop();
-	}
+    {
+        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+            if (ste.getClassName().startsWith("org.apache.maven.surefire")) {
+                isRunInMaven = true;
+                serverURL = "http://nutztest.herokuapp.com";
+                break;
+            }
+        }
+    }
 
-	public String getContextPath() {
-		return "/nutztest";
-	}
+    @Before
+    public void startServer() throws Throwable {
+        if (!isRunInMaven) {
+            try {
+                URL url = getClass().getClassLoader().getResource("org/nutz/mvc/testapp/Root/FLAG");
+                String path = url.toExternalForm();
+                System.err.println(url);
+                server = new Server(8888);
+                String warUrlString = path.substring(0, path.length() - 4);
+                server.setHandler(new WebAppContext(warUrlString, getContextPath()));
+                server.start();
+            }
+            catch (Throwable e) {
+                if (server != null)
+                    server.stop();
+                throw e;
+            }
+        }
+    }
 
-	public String getBaseURL() {
-		return "http://localhost:8888" + getContextPath();
-	}
+    @After
+    public void shutdownServer() throws Throwable {
+        if (!isRunInMaven) {
+            if (server != null)
+                server.stop();
+        }
+    }
 
-	public Response get(String path) {
-		resp = Http.get(getBaseURL() + path);
-		assertNotNull(resp);
-		return resp;
-	}
+    public String getContextPath() {
+        return "/nutztest";
+    }
 
-	public Response post(String path, Map<String, Object> params) {
-		resp = Sender.create(Request.create(getBaseURL() + path, METHOD.POST, params, null)).send();
-		assertNotNull(resp);
-		return resp;
-	}
+    public String getBaseURL() {
+        return serverURL + getContextPath();
+    }
 
-	public Response post(String path, String data) {
-		Request req = Request.create(getBaseURL() + path, METHOD.POST);
-		req.setData(data);
-		resp = Sender.create(req).send();
-		assertNotNull(resp);
-		return resp;
-	}
+    public Response get(String path) {
+        resp = Http.get(getBaseURL() + path);
+        assertNotNull(resp);
+        return resp;
+    }
 
-	public Response post(String path, byte[] bytes) {
-		Request req = Request.create(getBaseURL() + path, METHOD.POST);
-		req.setData(bytes);
-		resp = Sender.create(req).send();
-		assertNotNull(resp);
-		return resp;
-	}
+    public Response post(String path, Map<String, Object> params) {
+        resp = Sender.create(Request.create(getBaseURL() + path, METHOD.POST, params, null)).send();
+        assertNotNull(resp);
+        return resp;
+    }
+
+    public Response post(String path, String data) {
+        Request req = Request.create(getBaseURL() + path, METHOD.POST);
+        req.setData(data);
+        resp = Sender.create(req).send();
+        assertNotNull(resp);
+        return resp;
+    }
+
+    public Response post(String path, byte[] bytes) {
+        Request req = Request.create(getBaseURL() + path, METHOD.POST);
+        req.setData(bytes);
+        resp = Sender.create(req).send();
+        assertNotNull(resp);
+        return resp;
+    }
 }
